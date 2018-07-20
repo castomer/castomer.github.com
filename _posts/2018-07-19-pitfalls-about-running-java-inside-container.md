@@ -11,10 +11,10 @@ tags: docker java jvm gc
 
 - container： 资源隔离、平台无关， 限制cpu、mem等资源
 - Java： 平台无关、[Write once, run anywhere、WORA](https://zh.wikipedia.org/wiki/%E4%B8%80%E6%AC%A1%E7%BC%96%E5%86%99%EF%BC%8C%E5%88%B0%E5%A4%84%E8%BF%90%E8%A1%8C)
-不知道自己跑在container里，以为它看到的资源都能用
 
-        结果：java的平台无关性就有点儿鸡肋了
 
+        java不知道自己运行在container里，以为它看到的资源都能用。结果：java工作在资源充足的
+        
 # 详述
 
     程序运行的两个核心资源：cpu和mem，其他资源或许也有限制，暂不涉及。
@@ -72,14 +72,13 @@ tags: docker java jvm gc
 
 ### 内存结构
 
-    JFTR: 分代:垃圾收集的一大策略，并不是所有GC算法都分代哦
+ JFTR: 分代:垃圾收集的一大策略，并不是所有GC算法都分代哦
 
+内存总量 = 广义堆内存 + 广义堆外内存
 
-    内存总量 = 广义堆内存 + 广义堆外内存
-
-        广义堆内内存 = 狭义堆内内存 + 永久代(Perm)
-            狭义对内内存 = 新生代(New) + 老年代(Old) # Xmx Xms
-                新生代(new) = S0 + S1 + Eden # NewSize NewRatio SurvivorRatio
+	广义堆内内存 = 狭义堆内内存 + 永久代(Perm)
+		狭义对内内存 = 新生代(New) + 老年代(Old) # Xmx Xms
+		新生代(New) = S0 + S1 + Eden # NewSize NewRatio SurvivorRatio
 
         广义堆外内存 = 狭义堆外内存(directbytebuffer)  # MaxDirectMemorySize，netty/mina等高性能网络通信常用，具体不是很了解
                         + java栈 # 需关注，线程数 * ThreadStackSize(Xss)
@@ -113,13 +112,13 @@ tags: docker java jvm gc
             - 与Metaspace替换Perm有点儿关系吧
 
 
-    综上，我们需要关注下面几类参数是否合理：
+综上，我们需要关注下面几类参数是否合理：
         - 狭义堆内 Xmx
         - 狭对堆外 MaxDirectMemorySize
         - Perm/Metaspace MaxPermSize/MaxMetaspaceSize
 
 
-### 或许出问题的默认值
+### 需关注的选项默认值
 
     - Xmx: 1/4 * 物理内存 # 此处的物理内存为Runtime看到的内存(大多时候是宿主机的内存)
     - MaxDirectMemorySize
@@ -131,7 +130,7 @@ tags: docker java jvm gc
 
 ### 实验
 
-    实验所用容器宿主机器是4核CPU16G内存
+实验所用容器宿主机器是4核CPU16G内存
 
 - java 7
 
@@ -192,7 +191,7 @@ tags: docker java jvm gc
 
             如：热开启gc日志
 
-                    jinfo -flag +PrintGC ${pid} # 官方文档说jinfo是实验工具，截至java 11 ea，它都还在，[不过jhat在java9被去掉了](http://openjdk.java.net/jeps/241)
+                    jinfo -flag +PrintGC ${pid} # 官方文档说jinfo是实验工具，截至java 10，它都还在，[不过jhat在java9被去掉了](http://openjdk.java.net/jeps/241)
                     jinfo -flag +PrintGCDetails ${pid}
 
 - 容器内执行jstat/jps/jmapOOM问题
