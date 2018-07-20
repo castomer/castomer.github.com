@@ -5,7 +5,8 @@
 # For technical reasons, this file is *NOT* reloaded automatically when you use
 # `jekyll serve`. If you change this file, please restart the server process.
 
-theme                    : "minimal-mistakes-jekyll"
+#theme                    : "minimal-mistakes-jekyll"
+remote_theme: "mmistakes/minimal-mistakes"
 minimal_mistakes_skin    : "default" # "air", "aqua", "contrast", "dark", "dirt", "neon", "mint", "plum", "sunrise"
 
 # Site Settings
@@ -61,7 +62,7 @@ yandex_site_verification :
 twitter:
   username               : "qudongfang"
 facebook:
-  username               : 
+  username               :
   app_id                 :
   publisher              :
 og_image                 : "/assets/images/bio-photo.jpg"
@@ -88,14 +89,14 @@ author:
   email            : "qudongfang@gmail.com"
   uri              :
   home             : # null (default), "absolute or relative url to link to author home"
-  bitbucket        : 
+  bitbucket        :
   codepen          :
   dribbble         :
   flickr           :
-  facebook         : 
+  facebook         :
   foursquare       :
   github           : qudongfang
-  google_plus      : 
+  google_plus      :
   keybase          :
   instagram        :
   lastfm           :
