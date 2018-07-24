@@ -59,6 +59,9 @@ tags: docker java jvm gc
     - ConcGCThreads
     - G1ConcRefinementThreads
     - CICompilerCount / CICompilerCountPerCPU
+    
+- java 8u191+ UseContainerSupport， 默认开启，backported java10的feature；java 9暂未backport这个feature，估计也过不了多久
+
 - java 10+:
     - UseContainerSupport， 默认开启
 
