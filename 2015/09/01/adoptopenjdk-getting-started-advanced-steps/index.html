@@ -1,0 +1,149 @@
+<!doctype html><html lang=en><head><meta name=generator content="Hugo 0.82.0"><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=x-ua-compatible content="IE=edge"><meta property="og:title" content="adoptopenjdk官方文档-进阶"><meta name=author content="Dongfang Qu"><meta name=keywords content="openjdk,jvm"><meta name=description content="编译过程性能优化的命令行参数  AdoptOpenJDK wiki的一个链接，提供了几个怎么提高编译过程性能的例子。
+ 编译 jcov 项目首页(项目信息, 编译指南, 其他…) …"><meta property="og:title" content="adoptopenjdk官方文档-进阶"><meta property="og:description" content="编译过程性能优化的命令行参数  AdoptOpenJDK wiki的一个链接，提供了几个怎么提高编译过程性能的例子。
+ 编译 jcov 项目首页(项目信息, 编译指南, 其他…)   https://wiki.openjdk.java.net/display/CodeTools/jcov
+ 源代码:   http://hg.openjdk.java.net/code-tools/jcov
+  从Adopt OpenJDK持续集成网站下载。
+ 快速编译指南  $ hg clone http://hg.openjdk.java.net/code-tools/jcov $ cd jcov/build $ ant clean $ ant -v -f build.xml -Dasmjar5=/path/to/asm-all-5.0.1.jar -Djavatestjar=/path/to/javatest.jar    asm 可以从http://download.forge.ow2.org/asm/asm-5.0.1-bin.zip下载
+  jtharness 可以从https://adopt-openjdk.ci.cloudbees.com/job/jtharness/lastSuccessfulBuild/artifact/下载
+   当项目主页有编译指南时，请参考项目主页，同时上面的编译编译指导会被删掉，避免重复。
+  请参考OpenJDK代码覆盖率.
+ 编译 sigtest 项目主页(项目信息, 编译指南, 其他…)  https://wiki.openjdk.java.net/display/CodeTools/sigtest
+ 源代码:   http://hg."><meta property="og:type" content="article"><meta property="og:url" content="http://concurrent.work/2015/09/01/adoptopenjdk-getting-started-advanced-steps/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2015-09-01T00:00:00+00:00"><meta property="article:modified_time" content="2015-09-01T00:00:00+00:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="adoptopenjdk官方文档-进阶"><meta name=twitter:description content="编译过程性能优化的命令行参数  AdoptOpenJDK wiki的一个链接，提供了几个怎么提高编译过程性能的例子。
+ 编译 jcov 项目首页(项目信息, 编译指南, 其他…)   https://wiki.openjdk.java.net/display/CodeTools/jcov
+ 源代码:   http://hg.openjdk.java.net/code-tools/jcov
+  从Adopt OpenJDK持续集成网站下载。
+ 快速编译指南  $ hg clone http://hg.openjdk.java.net/code-tools/jcov $ cd jcov/build $ ant clean $ ant -v -f build.xml -Dasmjar5=/path/to/asm-all-5.0.1.jar -Djavatestjar=/path/to/javatest.jar    asm 可以从http://download.forge.ow2.org/asm/asm-5.0.1-bin.zip下载
+  jtharness 可以从https://adopt-openjdk.ci.cloudbees.com/job/jtharness/lastSuccessfulBuild/artifact/下载
+   当项目主页有编译指南时，请参考项目主页，同时上面的编译编译指导会被删掉，避免重复。
+  请参考OpenJDK代码覆盖率.
+ 编译 sigtest 项目主页(项目信息, 编译指南, 其他…)  https://wiki.openjdk.java.net/display/CodeTools/sigtest
+ 源代码:   http://hg."><link rel=stylesheet type=text/css media=screen href=/css/normalize.css><link rel=stylesheet type=text/css media=screen href=/css/main.css><link rel=stylesheet type=text/css media=screen href=/css/all.css><link rel=stylesheet href=/css/katex.min.css crossorigin=anonymous><script defer src=/js/katex.min.js integrity=sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz crossorigin=anonymous></script><script defer src=/js/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script><script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}]})})</script><title>adoptopenjdk官方文档-进阶 | Concurrent Work</title></head><body><header><div id=titletext><h2 id=title><a href=http://concurrent.work/>Concurrent Work</a></h2></div><div id=title-description><p id=subtitle>Rambling of a coder who craves for knowledge and understanding of the world.</p><div id=social><nav><ul><li><a href=https://github.com/qudongfang><i title=Github class="icons fab fa-github"></i></a></li><li><a href=https://www.linkedin.com/in/qudongfang/><i title=LinkedIn class="icons fab fa-linkedin"></i></a></li><li><a href=https://twitter.com/qudongfang><i title=Twitter class="icons fab fa-twitter"></i></a></li></ul></nav></div></div><div id=mainmenu><nav><ul><li><a href=/posts>All Posts</a></li><li><a href=/tags>Tags</a></li><li><a href=/about>About</a></li></ul></nav></div></header><main><div class=post><div class=author><p>Written by Dongfang Qu</p></div><div class=post-header><div class=meta><div class=date><span class=day>01</span>
+<span class=rest>Sep 2015</span></div></div><div class=matter><h1 class=title>adoptopenjdk官方文档-进阶</h1></div></div><div class=markdown><h2 id=编译过程性能优化的命令行参数>编译过程性能优化的命令行参数</h2><blockquote><p>AdoptOpenJDK wiki的一个<a href=https://java.net/projects/adoptopenjdk/pages/BuildPerformanceOptimisation#Command-line_arguments_for_build_performance_optimisation target=_blank>链接</a>，提供了几个怎么提高编译过程性能的例子。</p></blockquote><h2 id=编译-jcov>编译 jcov</h2><h3 id=项目首页项目信息-编译指南-其他-br>项目首页(项目信息, 编译指南, 其他…)</h3><blockquote><p><a href=https://wiki.openjdk.java.net/display/CodeTools/jcov>https://wiki.openjdk.java.net/display/CodeTools/jcov</a></p></blockquote><h3 id=源代码-br>源代码:</h3><blockquote><p><a href=http://hg.openjdk.java.net/code-tools/jcov>http://hg.openjdk.java.net/code-tools/jcov</a></p></blockquote><blockquote><p>从<a href=https://adopt-openjdk.ci.cloudbees.com/job/jcov/lastSuccessfulBuild/artifact/ target=_blank>Adopt OpenJDK持续集成网站</a>下载。</p></blockquote><h3 id=快速编译指南>快速编译指南</h3><blockquote><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback>
+$ hg clone http://hg.openjdk.java.net/code-tools/jcov
+$ cd jcov/build
+$ ant clean
+$ ant -v -f build.xml -Dasmjar5=/path/to/asm-all-5.0.1.jar -Djavatestjar=/path/to/javatest.jar
+
+</code></pre></div></blockquote><ul><li><p><code>asm</code> 可以从http://download.forge.ow2.org/asm/asm-5.0.1-bin.zip下载</p></li><li><p><code>jtharness</code> 可以从https://adopt-openjdk.ci.cloudbees.com/job/jtharness/lastSuccessfulBuild/artifact/下载</p></li></ul><blockquote><p>当项目主页有编译指南时，请参考项目主页，同时上面的编译编译指导会被删掉，避免重复。</p></blockquote><blockquote><p>请参考<a href=openjdk_code_coverage.md>OpenJDK代码覆盖率</a>.</p></blockquote><h2 id=编译-sigtest>编译 sigtest</h2><h3 id=项目主页项目信息-编译指南-其他>项目主页(项目信息, 编译指南, 其他…)</h3><blockquote><p><a href=https://wiki.openjdk.java.net/display/CodeTools/sigtest>https://wiki.openjdk.java.net/display/CodeTools/sigtest</a></p></blockquote><h3 id=源代码-br-1>源代码:</h3><blockquote><p><a href=http://hg.openjdk.java.net/code-tools/sigtest>http://hg.openjdk.java.net/code-tools/sigtest</a></p></blockquote><h3 id=快速编译指南-br>快速编译指南</h3><blockquote><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback>
+$ svn checkout https://svn.java.net/svn/sigtest~svn/trunk
+$ cd code/build
+$ ant build -Djdk5.home=/path/to/jdk1.5.latest \
+-Djdk8.home=/path/to/jdk8.latest \
+-Dmvn2.exe=/path/to/latest/bin/mvn
+
+</code></pre></div></blockquote><blockquote><p>当项目主页有编译指南时，请参考项目主页，同时上面的编译编译指导会被删掉，避免重复。</p></blockquote><h2 id=openjdk代码覆盖率>OpenJDK代码覆盖率</h2><blockquote><p>Adopt OpenJDK的代码覆盖率指南<a href=https://java.net/projects/adoptopenjdk/pages/Codecoverage target=_blank>code-coverage</a>.</p></blockquote><h3 id=现存代码测试覆盖率报告-openjdk8-和-openjdk9>现存代码测试覆盖率报告 (OpenJDK8 和 OpenJDK9)</h3><blockquote><p>我们最近为运行在Adopt OpenJDK 编译集群上的 OpenJDK8和 OpenJDK9持续集成增加了代码测试覆盖率报告。自动为[OpenJDK8]
+(<a href=https://adopt-openjdk.ci.cloudbees.com/view/OpenJDK/job/openjdk-1.8-linux-x86_64/ws/testoutput/jdk_core/JTreport/jcov/index.html>https://adopt-openjdk.ci.cloudbees.com/view/OpenJDK/job/openjdk-1.8-linux-x86_64/ws/testoutput/jdk_core/JTreport/jcov/index.html</a>)
+和<a href=https://adopt-openjdk.ci.cloudbees.com/view/OpenJDK/job/openjdk-1.9-linux-x86_64/ws/testoutput/jdk_core/JTreport/jcov/index.html target=_blank>OpenJDK9</a>发布[jcov 报告].</p></blockquote><h3 id=运行openjdk9的代码测试覆盖率测试>运行OpenJDK9的代码测试覆盖率测试</h3><h4 id=提示>提示:</h4><blockquote><ul><li>同样的步骤也适用于&rsquo;OpenJDK8'</li><li>这些步骤仅用于生成&rsquo;jdk&rsquo;的测试覆盖率报告</li><li>我们没有能够成功的生成&rsquo;langtools&rsquo;的测试覆盖率报告</li></ul></blockquote><blockquote><ul><li>保证最新的<code>jdk</code>映像在<code>OpenJDK9</code>编译生成目录 (参见 <a href=../binaries/build_your_own_openjdk.md>编译你自己的OpenJDK</a>).</li><li>安装 <code>jtreg with the jcov</code>, 参见<a href=../intermediate-steps/preparations.md>JTReg的使用</a>.</li><li>把这些exports添加到你的<code>.bash_xxx</code>配置文件中:</li></ul><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback>
+export SOURCE_CODE=/home/&lt;username&gt;/workspace/jdk9/
+export JTREG_INSTALL=/home/&lt;username&gt;/workspace/jtreg
+export JT_HOME=$JTREG_INSTALL
+export JTREG_HOME=$JTREG_INSTALL
+export PRODUCT_HOME=$SOURCE_CODE/build/linux-x86_64-normal-server-release/images/jdk
+export JPRT_JTREG_HOME=${JT_HOME}
+export JPRT_JAVA_HOME=${PRODUCT_HOME}
+export JTREG_TIMEOUT_FACTOR=5
+export CONCURRENCY=8
+
+</code></pre></div><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback>$ cd $SOURCES/jdk9/jdk/test
+</code></pre></div><ul><li>编辑 <code>Makefile</code> 文件，在 <code># Make sure jtreg exists</code>行之前增加如下行:</li></ul></blockquote><blockquote><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback>
+jdkroot=&lt;你的jdk9代码路径, 参见上面&gt;
+
+JTREG_TEST_OPTIONS += -jcov/classes:$(jdkroot)/build/linux-x86_64-normal-server-release/jdk/modules/java.base
+JTREG_TEST_OPTIONS += -jcov/source:$(jdkroot)/jdk/src/java.base/share/classes
+JTREG_TEST_OPTIONS += -jcov/include:*
+
+</code></pre></div></blockquote><h3 id=debug-模式执行测试>debug 模式执行测试</h3><blockquote><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback>$ cd ..
+$ make test LOG=debug
+
+</code></pre></div></blockquote><h3 id=打开生成的测试覆盖率报告>打开生成的测试覆盖率报告</h3><blockquote><p>一旦结束了, 进入如下路径查看报告:</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback>$ cd $SOURCES/jdk9/build/linux-x86_64-normal-server-release/testoutput/jdk_core/JTreport/jcov/
+$ open index.html
+</code></pre></div><p>这会花费几个小时，具体时间取决于你的系统性能和可用资源。</p><p>请参考jcov的编译。</p></blockquote><h2 id=深入-hotspot-的东西>深入 hotspot 的东西</h2><blockquote><p>hotspot 源码目录中的GC选项</p></blockquote><blockquote><p>../hotspot/src/share/vm/gc_implementation/g1/g1_globals.hpp</p></blockquote><blockquote><p>../hotspot/src/share/vm/runtime/globals.hpp</p></blockquote><blockquote><p>HotSpot 命令行选项 - PrintAssembly</p></blockquote><blockquote><p>HotSpot 代码片段 - 由于不同GC选项引起的各种分支选择</p></blockquote><table><thead><tr><th>GC类型</th><th>老年代</th><th>老年代</th></tr></thead><tbody><tr><td>SerialGC (-XX:+UseSerialGC)</td><td>串行</td><td>串行</td></tr><tr><td>ParallGC (-XX:+UseParallelGC)</td><td>并行</td><td>串行</td></tr><tr><td>Parallel Compacting(-XX:+UseParallelOldGC)</td><td>并行</td><td>并行</td></tr><tr><td>Concurrent Mark Sweep GC (-XX:+UseConcMarkSweepGC)</td><td>并行</td><td>并发-标记-清除</td></tr></tbody></table><blockquote><p><a href=http://www.weblogic-training.com/performance-tuning/difference-between-serial-gc-parallgc-cms-%28-concurrent-mark-sweep%29-gc/ target=_blank>参考</a></p><p>来自<a href=http://hg.openjdk.java.net/jdk6/jdk6/hotspot/raw-file/a541ca8fa0e3/src/share/vm/memory/universe.cpp target=_blank>./hotspot/src/share/vm/memory/universe.cpp</a>的代码片段</p></blockquote><blockquote><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#970;font-weight:700>
+</span><span style=color:#970;font-weight:700>Universe:</span><span style=color:#333>:</span>initialize_heap<span style=color:#333>()</span>
+<span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>UseParallelGC<span style=color:#333>)</span> <span style=color:#333>{</span>
+    <span style=color:red;background-color:#faa>#</span>ifndef SERIALGC
+    Universe<span style=color:#333>::</span>_collectedHeap <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> ParallelScavengeHeap<span style=color:#333>();</span>
+    <span style=color:red;background-color:#faa>#</span><span style=color:#080;font-weight:700>else</span> <span style=color:#888>// SERIALGC
+</span><span style=color:#888></span>        fatal<span style=color:#333>(</span><span style=background-color:#fff0f0>&#34;UseParallelGC not supported in this VM.&#34;</span><span style=color:#333>);</span>
+    <span style=color:red;background-color:#faa>#</span>endif <span style=color:#888>// SERIALGC
+</span><span style=color:#888></span><span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>UseG1GC<span style=color:#333>)</span> <span style=color:#333>{</span>
+    <span style=color:red;background-color:#faa>#</span>ifndef SERIALGC
+    G1CollectorPolicy<span style=color:#333>*</span> g1p <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> G1CollectorPolicy<span style=color:#333>();</span>
+    G1CollectedHeap<span style=color:#333>*</span> g1h <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> G1CollectedHeap<span style=color:#333>(</span>g1p<span style=color:#333>);</span>
+    Universe<span style=color:#333>::</span>_collectedHeap <span style=color:#333>=</span> g1h<span style=color:#333>;</span>
+    <span style=color:red;background-color:#faa>#</span><span style=color:#080;font-weight:700>else</span> <span style=color:#888>// SERIALGC
+</span><span style=color:#888></span>        fatal<span style=color:#333>(</span><span style=background-color:#fff0f0>&#34;UseG1GC not supported in java kernel vm.&#34;</span><span style=color:#333>);</span>
+    <span style=color:red;background-color:#faa>#</span>endif <span style=color:#888>// SERIALGC
+</span><span style=color:#888></span><span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#333>{</span>
+    GenCollectorPolicy<span style=color:#333>*</span> gc_policy<span style=color:#333>;</span>
+    <span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>UseSerialGC<span style=color:#333>)</span> <span style=color:#333>{</span>
+        gc_policy <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> MarkSweepPolicy<span style=color:#333>();</span>
+    <span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>UseConcMarkSweepGC<span style=color:#333>)</span> <span style=color:#333>{</span>
+        <span style=color:red;background-color:#faa>#</span>ifndef SERIALGC
+        <span style=color:#06b;font-weight:700>if</span> <span style=color:#333>(</span>UseAdaptiveSizePolicy<span style=color:#333>)</span> <span style=color:#333>{</span>
+            gc_policy <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> ASConcurrentMarkSweepPolicy<span style=color:#333>();</span>
+        <span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#333>{</span>
+            gc_policy <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> ConcurrentMarkSweepPolicy<span style=color:#333>();</span>
+        <span style=color:#333>}</span>
+        <span style=color:red;background-color:#faa>#</span><span style=color:#080;font-weight:700>else</span> <span style=color:#888>// SERIALGC
+</span><span style=color:#888></span>            fatal<span style=color:#333>(</span><span style=background-color:#fff0f0>&#34;UseConcMarkSweepGC not supported in this VM.&#34;</span><span style=color:#333>);</span>
+        <span style=color:red;background-color:#faa>#</span>endif <span style=color:#888>// SERIALGC
+</span><span style=color:#888></span>    <span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#333>{</span> <span style=color:#888>// default old generation
+</span><span style=color:#888></span>        gc_policy <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> MarkSweepPolicy<span style=color:#333>();</span>
+    <span style=color:#333>}</span>
+    Universe<span style=color:#333>::</span>_collectedHeap <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> GenCollectedHeap<span style=color:#333>(</span>gc_policy<span style=color:#333>);</span>
+<span style=color:#333>}</span>
+</code></pre></div></blockquote><h3 id=打开串行gc----只支持串行gc的平台>打开串行GC - 只支持串行GC的平台?</h3><blockquote><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#333>.</span>
+<span style=color:#333>.</span>
+<span style=color:#333>.</span>
+<span style=color:#970;font-weight:700>Universe:</span><span style=color:#333>:</span>initialize_heap<span style=color:#333>()</span>
+<span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>UseParallelGC<span style=color:#333>)</span> <span style=color:#333>{</span>
+        fatal<span style=color:#333>(</span><span style=background-color:#fff0f0>&#34;UseParallelGC not supported in this VM.&#34;</span><span style=color:#333>);</span>
+<span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>UseG1GC<span style=color:#333>)</span> <span style=color:#333>{</span>
+        fatal<span style=color:#333>(</span><span style=background-color:#fff0f0>&#34;UseG1GC not supported in java kernel vm.&#34;</span><span style=color:#333>);</span>
+<span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#333>{</span>
+    GenCollectorPolicy<span style=color:#333>*</span> gc_policy<span style=color:#333>;</span>
+    <span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>UseSerialGC<span style=color:#333>)</span> <span style=color:#333>{</span>
+        gc_policy <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> MarkSweepPolicy<span style=color:#333>();</span>
+    <span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>UseConcMarkSweepGC<span style=color:#333>)</span> <span style=color:#333>{</span>
+            fatal<span style=color:#333>(</span><span style=background-color:#fff0f0>&#34;UseConcMarkSweepGC not supported in this VM.&#34;</span><span style=color:#333>);</span>
+    <span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#333>{</span> <span style=color:#888>// default old generation
+</span><span style=color:#888></span>        gc_policy <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> MarkSweepPolicy<span style=color:#333>();</span>
+    <span style=color:#333>}</span>
+    Universe<span style=color:#333>::</span>_collectedHeap <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> GenCollectedHeap<span style=color:#333>(</span>gc_policy<span style=color:#333>);</span>
+<span style=color:#333>}</span>
+<span style=color:#333>.</span>
+<span style=color:#333>.</span>
+<span style=color:#333>.</span>
+</code></pre></div></blockquote><h3 id=关闭串行gc---支持并行和串行两种gc方式的平台>关闭串行GC - 支持并行和串行两种GC方式的平台?</h3><blockquote><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#333>.</span>
+<span style=color:#333>.</span>
+<span style=color:#333>.</span>
+<span style=color:#970;font-weight:700>Universe:</span><span style=color:#333>:</span>initialize_heap<span style=color:#333>()</span>
+
+<span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>UseParallelGC<span style=color:#333>)</span> <span style=color:#333>{</span>
+    Universe<span style=color:#333>::</span>_collectedHeap <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> ParallelScavengeHeap<span style=color:#333>();</span>
+<span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>UseG1GC<span style=color:#333>)</span> <span style=color:#333>{</span>
+    G1CollectorPolicy<span style=color:#333>*</span> g1p <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> G1CollectorPolicy<span style=color:#333>();</span>
+    G1CollectedHeap<span style=color:#333>*</span> g1h <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> G1CollectedHeap<span style=color:#333>(</span>g1p<span style=color:#333>);</span>
+    Universe<span style=color:#333>::</span>_collectedHeap <span style=color:#333>=</span> g1h<span style=color:#333>;</span>
+<span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#333>{</span>
+    GenCollectorPolicy<span style=color:#333>*</span> gc_policy<span style=color:#333>;</span>
+
+    <span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>UseSerialGC<span style=color:#333>)</span> <span style=color:#333>{</span>
+        gc_policy <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> MarkSweepPolicy<span style=color:#333>();</span>
+    <span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>UseConcMarkSweepGC<span style=color:#333>)</span> <span style=color:#333>{</span>
+        <span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>UseAdaptiveSizePolicy<span style=color:#333>)</span> <span style=color:#333>{</span>
+            gc_policy <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> ASConcurrentMarkSweepPolicy<span style=color:#333>();</span>
+        <span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#333>{</span>
+            gc_policy <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> ConcurrentMarkSweepPolicy<span style=color:#333>();</span>
+        <span style=color:#333>}</span>
+    <span style=color:#333>}</span> <span style=color:#080;font-weight:700>else</span> <span style=color:#333>{</span> <span style=color:#888>// default old generation
+</span><span style=color:#888></span>        gc_policy <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> MarkSweepPolicy<span style=color:#333>();</span>
+    <span style=color:#333>}</span>
+<span style=color:#970;font-weight:700>
+</span><span style=color:#970;font-weight:700>    Universe:</span><span style=color:#333>:</span>_collectedHeap <span style=color:#333>=</span> <span style=color:#080;font-weight:700>new</span> GenCollectedHeap<span style=color:#333>(</span>gc_policy<span style=color:#333>);</span>
+<span style=color:#333>}</span>
+<span style=color:#333>.</span>
+</code></pre></div></blockquote><h2 id=编译器相关>编译器相关</h2><blockquote><p>OptViewer工具，参考这个<a href=http://mail.openjdk.java.net/pipermail/hotspot-compiler-dev/2013-February/009778.html target=_blank>邮件</a>。</p></blockquote><h2 id=修改-javac使用-eclipse运行-hotspot>修改 java.c，使用 Eclipse运行 hotspot</h2><blockquote><p>[可选，但很有意思的一个挑战]
+请参考<a href=http://bit.ly/12LxuQy target=_blank>这些</a>指南。</p><h2 id=修改-javac使用命令行运行-hotspot>修改 java.c，使用命令行运行 hotspot</h2><p>[可选，但很有意思的一个挑战]</p><p>和修改java.c并在 Eclipse运行的挑战类似，但是使用需要使用命令行和一个简单的编辑器来完成这一挑战。</p></blockquote><h2 id=敬请期待>敬请期待</h2><ul><li>Nashorn的一些好东西</li><li>Lambda进阶</li><li>OpenJDK(JDK)代码测试覆盖率工具（两个）</li><li>OpenJDK build warnings tool (which are currently suppressed in the build process)&mldr;</li><li>OpenJDK 编译警告工具（当前在编译过程中被禁用）</li><li>使用 jitWatch观察 HotSpot JVM JIT编译过程</li><li>运行在 JVM 上的Smalltalk</li><li>运行在 JVM 上的Lisp</li></ul><h2 id=hotspot-jvm-任务-附加任务-中级和高级>Hotspot JVM 任务: 附加任务 (中级和高级)</h2><ul><li>向 java.c 中增加 debug 级别的 log信息，重新编译 gamma，运行示例程序或者任何其他基于 java 的程序。</li><li>重构 java.c，插入 debug 级别的 Log细腻，重新编译 gamma，运行示例程序或者任何其他基于 java 的程序。</li><li>完成以上两步后，加载一个低延迟，GC 调优过的 java 程序，开启 gc log，检查 gc log，看性能是否有变化（性能调优相关的东西）。</li><li>在 javac 中实现 ?:运算符(学习怎么修改 javac 的好方法)，编译一个java 程序。</li><li>体味GC 的乐趣：使用自定义的垃圾收集器替换已有的。重新激活代码库中的 PermGen 或者 iCMS 。在现在 HotSpot 版本中增加任意你想做的修改。</li><li>修改 javac 使他能够解析和编译新的语言特性，或者让它能够兼容其他基于 JVM 的方言、甚至于更老的程序语言，例如 C、汇编、Scheme 或Smalltalk</li><li>使用自定义类加载器替换内置内加载器。</li></ul></div><div class=tags><div class=taxosfloating_left><p>Categories</p></div><div class=termsfloating_right><p><a href=/categories/jvm/>jvm</a>
+<a href=/categories/openjdk/>openjdk</a></p></div><div class=clearit></div><div class=tags><div class=taxosfloating_left><p>Tags</p></div><div class=termsfloating_right><p><a href=/tags/jvm/>jvm</a>
+<a href=/tags/openjdk/>openjdk</a></p></div><div class=clearit></div></div></div></main><footer>©Copyright | <a href=https://github.com/qudongfang/>Concurrent work</a></footer></body></html>

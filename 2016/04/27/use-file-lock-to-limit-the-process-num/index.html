@@ -1,0 +1,65 @@
+<!doctype html><html lang=en><head><meta name=generator content="Hugo 0.82.0"><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=x-ua-compatible content="IE=edge"><meta property="og:title" content="使用文件锁防止进程被启多个"><meta name=author content="Dongfang Qu"><meta name=keywords content="ops,golang"><meta name=description content="基本原理：进程启动时尝试锁住自己的二进制，启动脚本通过flock命令检查二进制是否被锁。
+ package main // demo.go // qudongfang@gmail.com  import ( &#34;os&#34; &#34;syscall&#34; &#34;time&#34; log …"><meta property="og:title" content="使用文件锁防止进程被启多个"><meta property="og:description" content="基本原理：进程启动时尝试锁住自己的二进制，启动脚本通过flock命令检查二进制是否被锁。
+ package main // demo.go // qudongfang@gmail.com  import ( &#34;os&#34; &#34;syscall&#34; &#34;time&#34; log &#34;github.com/cihub/seelog&#34; ) func main() { path, err := os.Readlink(&#34;/proc/self/exe&#34;) if nil != err { return } // file lock 	lockProgram, err := os.Open(path) if nil != err { log.Criticalf(&#34;can not open file. path = %v, err = %v&#34;, path, err) log.Flush() time.Sleep(time.Second) os.Exit(1) } defer lockProgram.Close() err = syscall.Flock(int(lockProgram.Fd()), syscall.LOCK_EX | syscall.LOCK_NB) if nil !"><meta property="og:type" content="article"><meta property="og:url" content="http://concurrent.work/2016/04/27/use-file-lock-to-limit-the-process-num/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2016-04-27T00:00:00+00:00"><meta property="article:modified_time" content="2016-04-27T00:00:00+00:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="使用文件锁防止进程被启多个"><meta name=twitter:description content="基本原理：进程启动时尝试锁住自己的二进制，启动脚本通过flock命令检查二进制是否被锁。
+ package main // demo.go // qudongfang@gmail.com  import ( &#34;os&#34; &#34;syscall&#34; &#34;time&#34; log &#34;github.com/cihub/seelog&#34; ) func main() { path, err := os.Readlink(&#34;/proc/self/exe&#34;) if nil != err { return } // file lock 	lockProgram, err := os.Open(path) if nil != err { log.Criticalf(&#34;can not open file. path = %v, err = %v&#34;, path, err) log.Flush() time.Sleep(time.Second) os.Exit(1) } defer lockProgram.Close() err = syscall.Flock(int(lockProgram.Fd()), syscall.LOCK_EX | syscall.LOCK_NB) if nil !"><link rel=stylesheet type=text/css media=screen href=/css/normalize.css><link rel=stylesheet type=text/css media=screen href=/css/main.css><link rel=stylesheet type=text/css media=screen href=/css/all.css><link rel=stylesheet href=/css/katex.min.css crossorigin=anonymous><script defer src=/js/katex.min.js integrity=sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz crossorigin=anonymous></script><script defer src=/js/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script><script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}]})})</script><title>使用文件锁防止进程被启多个 | Concurrent Work</title></head><body><header><div id=titletext><h2 id=title><a href=http://concurrent.work/>Concurrent Work</a></h2></div><div id=title-description><p id=subtitle>Rambling of a coder who craves for knowledge and understanding of the world.</p><div id=social><nav><ul><li><a href=https://github.com/qudongfang><i title=Github class="icons fab fa-github"></i></a></li><li><a href=https://www.linkedin.com/in/qudongfang/><i title=LinkedIn class="icons fab fa-linkedin"></i></a></li><li><a href=https://twitter.com/qudongfang><i title=Twitter class="icons fab fa-twitter"></i></a></li></ul></nav></div></div><div id=mainmenu><nav><ul><li><a href=/posts>All Posts</a></li><li><a href=/tags>Tags</a></li><li><a href=/about>About</a></li></ul></nav></div></header><main><div class=post><div class=author><p>Written by Dongfang Qu</p></div><div class=post-header><div class=meta><div class=date><span class=day>27</span>
+<span class=rest>Apr 2016</span></div></div><div class=matter><h1 class=title>使用文件锁防止进程被启多个</h1></div></div><div class=markdown><p>基本原理：进程启动时尝试锁住自己的二进制，启动脚本通过flock命令检查二进制是否被锁。</p><hr><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-golang data-lang=golang><span style=color:#080;font-weight:700>package</span> main
+
+<span style=color:#888>// demo.go
+</span><span style=color:#888>// qudongfang@gmail.com
+</span><span style=color:#888></span>
+<span style=color:#080;font-weight:700>import</span> (
+	<span style=background-color:#fff0f0>&#34;os&#34;</span>
+	<span style=background-color:#fff0f0>&#34;syscall&#34;</span>
+	<span style=background-color:#fff0f0>&#34;time&#34;</span>
+	log <span style=background-color:#fff0f0>&#34;github.com/cihub/seelog&#34;</span>
+)
+
+<span style=color:#080;font-weight:700>func</span> <span style=color:#06b;font-weight:700>main</span>() {
+	path, err <span style=color:#333>:=</span> os.<span style=color:#06b;font-weight:700>Readlink</span>(<span style=background-color:#fff0f0>&#34;/proc/self/exe&#34;</span>)
+	<span style=color:#080;font-weight:700>if</span> <span style=color:#080;font-weight:700>nil</span> <span style=color:#333>!=</span> err {
+		<span style=color:#080;font-weight:700>return</span>
+	}
+
+	<span style=color:#888>// file lock
+</span><span style=color:#888></span>	lockProgram, err <span style=color:#333>:=</span> os.<span style=color:#06b;font-weight:700>Open</span>(path)
+	<span style=color:#080;font-weight:700>if</span> <span style=color:#080;font-weight:700>nil</span> <span style=color:#333>!=</span> err {
+		log.<span style=color:#06b;font-weight:700>Criticalf</span>(<span style=background-color:#fff0f0>&#34;can not open file. path = %v, err = %v&#34;</span>, path, err)
+		log.<span style=color:#06b;font-weight:700>Flush</span>()
+		time.<span style=color:#06b;font-weight:700>Sleep</span>(time.Second)
+
+		os.<span style=color:#06b;font-weight:700>Exit</span>(<span style=color:#00d;font-weight:700>1</span>)
+	}
+	<span style=color:#080;font-weight:700>defer</span> lockProgram.<span style=color:#06b;font-weight:700>Close</span>()
+
+	err = syscall.<span style=color:#06b;font-weight:700>Flock</span>(<span style=color:#007020>int</span>(lockProgram.<span style=color:#06b;font-weight:700>Fd</span>()), syscall.LOCK_EX | syscall.LOCK_NB)
+	<span style=color:#080;font-weight:700>if</span> <span style=color:#080;font-weight:700>nil</span> <span style=color:#333>!=</span> err {
+		log.<span style=color:#06b;font-weight:700>Critical</span>(<span style=background-color:#fff0f0>&#34;is already running. &#34;</span>, err)
+		log.<span style=color:#06b;font-weight:700>Flush</span>()
+		time.<span style=color:#06b;font-weight:700>Sleep</span>(time.Second)
+
+		os.<span style=color:#06b;font-weight:700>Exit</span>(<span style=color:#00d;font-weight:700>1</span>)
+	}
+	<span style=color:#080;font-weight:700>defer</span> syscall.<span style=color:#06b;font-weight:700>Flock</span>(<span style=color:#007020>int</span>(lockProgram.<span style=color:#06b;font-weight:700>Fd</span>()), syscall.LOCK_UN)
+
+	<span style=color:#888>// TODO add your code here
+</span><span style=color:#888></span>	
+	log.<span style=color:#06b;font-weight:700>Info</span>(<span style=background-color:#fff0f0>&#34;program has started successfully.&#34;</span>)
+
+	<span style=color:#080;font-weight:700>select</span> {}
+}
+
+
+</code></pre></div><hr><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=color:#888># check running</span>
+
+<span style=color:#888># 1 = running</span>
+<span style=color:#888># 0 = not running</span>
+<span style=color:#080;font-weight:700>function</span> check_running<span style=color:#333>(){</span>
+    <span style=color:#888># TODO set/get EXEC_PATH</span>
+    flock -x -n <span style=background-color:#eee>${</span><span style=color:#963>EXE_PATH</span><span style=background-color:#eee>}</span> -c <span style=background-color:#fff0f0>&#34;&#34;</span>
+
+    <span style=color:#080;font-weight:700>return</span> <span style=color:#963>$?</span>
+<span style=color:#333>}</span>
+
+</code></pre></div></div><div class=tags><div class=taxosfloating_left><p>Categories</p></div><div class=termsfloating_right><p><a href=/categories/golang/>golang</a>
+<a href=/categories/ops/>ops</a></p></div><div class=clearit></div><div class=tags><div class=taxosfloating_left><p>Tags</p></div><div class=termsfloating_right><p><a href=/tags/golang/>golang</a>
+<a href=/tags/ops/>ops</a></p></div><div class=clearit></div></div></div></main><footer>©Copyright | <a href=https://github.com/qudongfang/>Concurrent work</a></footer></body></html>

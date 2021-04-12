@@ -1,0 +1,106 @@
+<!doctype html><html lang=en><head><meta name=generator content="Hugo 0.82.0"><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=x-ua-compatible content="IE=edge"><meta property="og:title" content="容器(docker)中运行java需关注的几个小问题"><meta name=author content="Dongfang Qu"><meta name=keywords content="docker,java,jvm,gc"><meta name=description content="简介   container： 资源隔离、平台无关， 限制cpu、mem等资源
+  Java： 平台无关、Write once, run anywhere、WORA
+ java不知道自己运行在container里，以为它看到的资源都能用。结果：java …"><meta property="og:title" content="容器(docker)中运行java需关注的几个小问题"><meta property="og:description" content="简介   container： 资源隔离、平台无关， 限制cpu、mem等资源
+  Java： 平台无关、Write once, run anywhere、WORA
+ java不知道自己运行在container里，以为它看到的资源都能用。结果：java工作在资源充足的    详述 程序运行的两个核心资源：cpu和mem，其他资源或许也有限制，暂不涉及。  cpu jvm检测可用cpu个数来优化运行时，影响jvm后台做的一些决策。
+影响  java.lang.Runtime 所以ump的jvm监控数据一直以来都是不准确的 GC 主要是线程数 JIT 代码编译/执行子系统优化  实验 实验所用容器宿主机器是4核CPU16G内存    java 6/7/8/9
+ docker run --cpus 1 -m 1G -it adoptopenjdk/openjdk9:latest # 给1核 jshell -J-Xmx512M -v # 启动jshell Runtime.getRuntime().availableProcessors() # 结果是不是1！！！    java 10
+ docker run --cpus 1 -m 1G -it adoptopenjdk/openjdk10:latest # 给1核 jshell -J-Xmx512M -v # 启动jshell Runtime."><meta property="og:type" content="article"><meta property="og:url" content="http://concurrent.work/2018/07/19/pitfalls-about-running-java-inside-container/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2018-07-19T00:00:00+00:00"><meta property="article:modified_time" content="2018-07-19T00:00:00+00:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="容器(docker)中运行java需关注的几个小问题"><meta name=twitter:description content="简介   container： 资源隔离、平台无关， 限制cpu、mem等资源
+  Java： 平台无关、Write once, run anywhere、WORA
+ java不知道自己运行在container里，以为它看到的资源都能用。结果：java工作在资源充足的    详述 程序运行的两个核心资源：cpu和mem，其他资源或许也有限制，暂不涉及。  cpu jvm检测可用cpu个数来优化运行时，影响jvm后台做的一些决策。
+影响  java.lang.Runtime 所以ump的jvm监控数据一直以来都是不准确的 GC 主要是线程数 JIT 代码编译/执行子系统优化  实验 实验所用容器宿主机器是4核CPU16G内存    java 6/7/8/9
+ docker run --cpus 1 -m 1G -it adoptopenjdk/openjdk9:latest # 给1核 jshell -J-Xmx512M -v # 启动jshell Runtime.getRuntime().availableProcessors() # 结果是不是1！！！    java 10
+ docker run --cpus 1 -m 1G -it adoptopenjdk/openjdk10:latest # 给1核 jshell -J-Xmx512M -v # 启动jshell Runtime."><link rel=stylesheet type=text/css media=screen href=/css/normalize.css><link rel=stylesheet type=text/css media=screen href=/css/main.css><link rel=stylesheet type=text/css media=screen href=/css/all.css><link rel=stylesheet href=/css/katex.min.css crossorigin=anonymous><script defer src=/js/katex.min.js integrity=sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz crossorigin=anonymous></script><script defer src=/js/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script><script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}]})})</script><title>容器(docker)中运行java需关注的几个小问题 | Concurrent Work</title></head><body><header><div id=titletext><h2 id=title><a href=http://concurrent.work/>Concurrent Work</a></h2></div><div id=title-description><p id=subtitle>Rambling of a coder who craves for knowledge and understanding of the world.</p><div id=social><nav><ul><li><a href=https://github.com/qudongfang><i title=Github class="icons fab fa-github"></i></a></li><li><a href=https://www.linkedin.com/in/qudongfang/><i title=LinkedIn class="icons fab fa-linkedin"></i></a></li><li><a href=https://twitter.com/qudongfang><i title=Twitter class="icons fab fa-twitter"></i></a></li></ul></nav></div></div><div id=mainmenu><nav><ul><li><a href=/posts>All Posts</a></li><li><a href=/tags>Tags</a></li><li><a href=/about>About</a></li></ul></nav></div></header><main><div class=post><div class=author><p>Written by Dongfang Qu</p></div><div class=post-header><div class=meta><div class=date><span class=day>19</span>
+<span class=rest>Jul 2018</span></div></div><div class=matter><h1 class=title>容器(docker)中运行java需关注的几个小问题</h1></div></div><div class=markdown><h1 id=简介>简介</h1><ul><li><p>container： 资源隔离、平台无关， 限制cpu、mem等资源</p></li><li><p>Java： 平台无关、<a href=https://zh.wikipedia.org/wiki/%E4%B8%80%E6%AC%A1%E7%BC%96%E5%86%99%EF%BC%8C%E5%88%B0%E5%A4%84%E8%BF%90%E8%A1%8C target=_blank>Write once, run anywhere、WORA</a></p><pre><code>  java不知道自己运行在container里，以为它看到的资源都能用。结果：java工作在资源充足的
+</code></pre></li></ul><h1 id=详述>详述</h1><pre><code>程序运行的两个核心资源：cpu和mem，其他资源或许也有限制，暂不涉及。
+</code></pre><h2 id=cpu>cpu</h2><p>jvm检测可用cpu个数来优化运行时，影响jvm后台做的一些决策。</p><h3 id=影响>影响</h3><ul><li><a href=https://docs.oracle.com/javase/8/docs/api/java/lang/Runtime.html target=_blank>java.lang.Runtime</a> 所以ump的jvm监控数据一直以来都是不准确的</li><li><a href=https://blogs.oracle.com/java-platform-group/java-se-support-for-docker-cpu-and-memory-limits target=_blank>GC</a> 主要是线程数</li><li><a href=https://en.wikipedia.org/wiki/Just-in-time_compilation target=_blank>JIT</a> <a href=https://blogs.oracle.com/java-platform-group/java-se-support-for-docker-cpu-and-memory-limits target=_blank>代码编译/执行子系统优化</a></li></ul><h2 id=实验>实验</h2><pre><code>实验所用容器宿主机器是4核CPU16G内存
+</code></pre><ul><li><p>java 6/7/8/9</p><pre><code>  docker run --cpus 1 -m 1G -it adoptopenjdk/openjdk9:latest # 给1核
+
+  jshell -J-Xmx512M -v # 启动jshell
+
+  Runtime.getRuntime().availableProcessors() # 结果是不是1！！！
+</code></pre></li><li><p>java 10</p><pre><code>  docker run --cpus 1 -m 1G -it adoptopenjdk/openjdk10:latest # 给1核
+
+  jshell -J-Xmx512M -v # 启动jshell
+
+  Runtime.getRuntime().availableProcessors() # 结果是1
+</code></pre></li></ul><h3 id=对策>对策</h3><pre><code>java 10才解决这个问题
+</code></pre><ul><li><p>java 10之前：手动设置jvm相关的选项，如：</p><ul><li>ParallelGCThreads</li><li>ConcGCThreads</li><li>G1ConcRefinementThreads</li><li>CICompilerCount / CICompilerCountPerCPU</li></ul></li><li><p>java 8u191+ UseContainerSupport， 默认开启，backported java10的feature；java 9暂未backport这个feature，估计也过不了多久</p></li><li><p>java 10+:</p><ul><li>UseContainerSupport， 默认开启</li></ul></li></ul><h2 id=mem>mem</h2><pre><code>jvm自动检测拿到的是宿主机的内存信息，它无法感知容器的资源上限
+主要需要关注：动态内存管理(上下限，默认值)
+
+我们先了解下java进程内存消耗在哪里
+</code></pre><h3 id=内存结构>内存结构</h3><p>JFTR: 分代:垃圾收集的一大策略，并不是所有GC算法都分代哦</p><p>内存总量 = 广义堆内存 + 广义堆外内存</p><pre><code>广义堆内内存 = 狭义堆内内存 + 永久代(Perm)
+	狭义对内内存 = 新生代(New) + 老年代(Old) # Xmx Xms
+	新生代(New) = S0 + S1 + Eden # NewSize NewRatio SurvivorRatio
+
+    广义堆外内存 = 狭义堆外内存(directbytebuffer)  # MaxDirectMemorySize，netty/mina等高性能网络通信常用，具体不是很了解
+                    + java栈 # 需关注，线程数 * ThreadStackSize(Xss)
+                    + native栈 # 不大，线程数 * VMThreadStackSize + CICompilerCount * CompilerThreadStackSize
+                    + pc寄存器  # 可忽略
+                    + jni（如带用c/c++ malloc）# 这个不可控，一般忽略就好
+
+
+    java 8之后Metaspace替代了Perm，从广义堆内转移到广义对外，why?
+        - Perm连续、固定、jvm启动即claim到max，浪费，不好控制
+        - 代码实验发现Perm不受Xmx限制`java -Xmx10M -Xmx10M -XX:PermSize=100M -XX:MaxPermSize=100M -version`
+        - Metaspace的实现类似链式结构，默认值-1(无限大，取决于kernel让用多少)，在fullgc时gc
+
+    上面关于广义/狭义内存的定义是参考别人的资料后，自己定义的。。。不喜勿喷
+
+        - 官方对于Perm的定义摇摆不定，前后矛盾，让我自己很困惑
+
+            正方：在
+                http://www.oracle.com/webfolder/technetwork/tutorials/obe/java/gc01/index.html
+                http://www.oracle.com/technetwork/java/javase/memorymanagement-whitepaper-150215.pdf
+                http://karunsubramanian.com/websphere/one-important-change-in-memory-management-in-java-8/
+
+            反方：不在
+                https://docs.oracle.com/javase/7/docs/technotes/guides/management/jconsole.html
+                https://stackoverflow.com/questions/1262328/how-is-the-java-memory-pool-divided
+                https://blogs.oracle.com/jonthecollector/presenting-the-permanent-generation
+                https://www.journaldev.com/2856/java-jvm-memory-model-memory-management-in-java
+                https://www.yourkit.com/docs/kb/sizes.jsp
+                https://blog.codecentric.de/en/2010/01/the-java-memory-architecture-1-act/
+
+        - 与Metaspace替换Perm有点儿关系吧
+</code></pre><p>综上，我们需要关注下面几类参数是否合理：
+- 狭义堆内 Xmx
+- 狭对堆外 MaxDirectMemorySize
+- Perm/Metaspace MaxPermSize/MaxMetaspaceSize</p><h3 id=需关注的选项默认值>需关注的选项默认值</h3><pre><code>- Xmx: 1/4 * 物理内存 # 此处的物理内存为Runtime看到的内存(大多时候是宿主机的内存)
+- MaxDirectMemorySize
+    - Xmx 未设置，物理内存
+    - Xmx 设置了， Xmx - S0(1/10 * Xmx) = 0.9 * Xmx # why? SurvivorRatio默认值8
+- MaxPermSize: 默认64M
+        [5.0+ 64 bit: 64M * 1.3 = 85M](http://www.oracle.com/technetwork/java/javase/tech/vmoptions-jsp-140102.html)
+- MaxMetaspaceSize: -1，无限制
+</code></pre><h3 id=实验-1>实验</h3><p>实验所用容器宿主机器是4核CPU16G内存</p><ul><li><p>java 7</p><pre><code>  docker run -m 1G -it openjdk:7u181
+  java -XX:+PrintFlagsFinal -version | grep MaxHeapSize # 结果是 16G / 4 = 4G
+</code></pre></li><li><p>java 8</p><pre><code>  docker run -m 1G -it adoptopenjdk/openjdk8:latest
+  java -XX:+PrintFlagsFinal -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -version | grep MaxHeapSize # 结果是 1G / 4 = 256M
+</code></pre></li><li><p>java 9</p><pre><code>  docker run -m 1G -it adoptopenjdk/openjdk9:latest
+  java -XX:+PrintFlagsFinal -version | grep MaxHeapSize # 结果是 16G / 4 = 4G
+  java -XX:+PrintFlagsFinal -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -version | grep MaxHeapSize # 结果是 1G / 4 = 256M
+</code></pre></li><li><p>java 10</p><pre><code>  docker run -m 1G -it adoptopenjdk/openjdk10:latest # 给1G
+  jshell -v # 启动jshell
+  java -XX:+PrintFlagsFinal -version | grep MaxHeapSize  # 结果是 1G / 4 = 256
+</code></pre></li></ul><h3 id=对策-1>对策</h3><ul><li><p>java5/6/7/8u131-：务必设置内存选项</p><pre><code>  懒人可考虑，虽然也不准确， 参考前面对jvm内存结构的分析
+  java -Xmx`cat /sys/fs/cgroup/memory/memory.limit_in_bytes`
+</code></pre></li><li><p>java8u131+和java9+</p><ul><li>java 8u131+和java 9+<code>-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code></li><li>java 8u191+ UseContainerSupport默认开启，backported；java 9暂未backport这个feature</li></ul></li><li><p>java10+</p><ul><li>使用最新版就好了，UseContainerSupport默认开启</li></ul></li></ul><h1 id=扩展>扩展</h1><h3 id=排查工具>排查工具</h3><ul><li><p>jvm支持的选项</p><ul><li><p>生产</p><pre><code>  java -XX:+PrintFlagsFinal 2&gt;/dev/null
+</code></pre></li><li><p>试验</p><pre><code>  java -XX:+PrintFlagsFinal -XX:+UnlockExperimentalVMOptions 2&gt;/dev/null | grep experimental
+</code></pre></li><li><p>可热更新</p><pre><code>  java -XX:+PrintFlagsFinal -XX:+UnlockExperimentalVMOptions 2&gt;/dev/null | grep manageable
+
+  如：热开启gc日志
+
+          jinfo -flag +PrintGC ${pid} # 官方文档说jinfo是实验工具，截至java 10，它都还在，[不过jhat在java9被去掉了](http://openjdk.java.net/jeps/241)
+          jinfo -flag +PrintGCDetails ${pid}
+</code></pre></li></ul></li><li><p>容器内执行jstat/jps/jmapOOM问题</p><pre><code>  工具类是用C++包装的java代码，它们不识别常规的传给jvm的参数，如最大内存。
+  在强悍的(超级大内存)宿主机器下，容器内经常因为OOM问题启动不了这些工具。
+</code></pre><ul><li><p>java 6及之前: 通过java调用</p><pre><code>  java -cp ${JAVA_HOME}/lib/tools.jar -Xmx100M sun.tools.jstack.JStack ${pid}
+</code></pre></li><li><p>java 7+</p><pre><code>  jstack -J-Xmx100M -v # -J选项给jvm传参数
+</code></pre></li></ul></li></ul><h1 id=ref>Ref</h1><ul><li><a href="https://bugs.java.com/view_bug.do?bug_id=JDK-8146115">https://bugs.java.com/view_bug.do?bug_id=JDK-8146115</a></li><li><a href=http://royvanrijn.com/blog/2018/05/java-and-docker-memory-limits/>http://royvanrijn.com/blog/2018/05/java-and-docker-memory-limits/</a></li><li><a href=https://blog.docker.com/2018/04/improved-docker-container-integration-with-java-10/>https://blog.docker.com/2018/04/improved-docker-container-integration-with-java-10/</a></li><li><a href=https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jstat.html>https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jstat.html</a></li><li><a href=https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.5>https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.5</a></li><li><a href=http://www.oracle.com/webfolder/technetwork/tutorials/obe/java/gc01/index.html>http://www.oracle.com/webfolder/technetwork/tutorials/obe/java/gc01/index.html</a></li><li><a href=https://blogs.oracle.com/java-platform-group/java-se-support-for-docker-cpu-and-memory-limits>https://blogs.oracle.com/java-platform-group/java-se-support-for-docker-cpu-and-memory-limits</a></li><li><a href=http://hg.openjdk.java.net/jdk/jdk/file/03f2bfdcb636/src/hotspot/os/linux/osContainer_linux.cpp>http://hg.openjdk.java.net/jdk/jdk/file/03f2bfdcb636/src/hotspot/os/linux/osContainer_linux.cpp</a></li><li><a href=http://hg.openjdk.java.net/jdk/jdk/file/03f2bfdcb636/src/hotspot/os/linux/globals_linux.hpp#l62>http://hg.openjdk.java.net/jdk/jdk/file/03f2bfdcb636/src/hotspot/os/linux/globals_linux.hpp#l62</a></li></ul></div><div class=tags><div class=taxosfloating_left><p>Categories</p></div><div class=termsfloating_right><p><a href=/categories/docker/>docker</a>
+<a href=/categories/gc/>gc</a>
+<a href=/categories/java/>java</a>
+<a href=/categories/jvm/>jvm</a></p></div><div class=clearit></div><div class=tags><div class=taxosfloating_left><p>Tags</p></div><div class=termsfloating_right><p><a href=/tags/docker/>docker</a>
+<a href=/tags/gc/>gc</a>
+<a href=/tags/java/>java</a>
+<a href=/tags/jvm/>jvm</a></p></div><div class=clearit></div></div></div></main><footer>©Copyright | <a href=https://github.com/qudongfang/>Concurrent work</a></footer></body></html>

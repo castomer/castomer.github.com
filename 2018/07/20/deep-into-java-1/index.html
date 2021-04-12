@@ -1,0 +1,121 @@
+<!doctype html><html lang=en><head><meta name=generator content="Hugo 0.82.0"><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=x-ua-compatible content="IE=edge"><meta property="og:title" content="深入jvm-1"><meta name=author content="Dongfang Qu"><meta name=keywords content="jvm,java,bytecode"><meta name=description content="初探字节码与jvm public class Foo { public static void main(String[] args) { boolean flag = true; if (flag) { System.out.println(&#34;Hello, Java!&#34;); } …"><meta property="og:title" content="深入jvm-1"><meta property="og:description" content="初探字节码与jvm public class Foo { public static void main(String[] args) { boolean flag = true; if (flag) { System.out.println(&#34;Hello, Java!&#34;); } if (true == flag) { System.out.println(&#34;Hello, JVM!&#34;); } } } 上面这段java代码，执行结果会是什么样的呢？问题会不会太弱鸡了？
+编译
+javac Foo.java # 先编译下它 执行
+java -cp . Foo # 执行下试试咯 Hello, Java! Hello, JVM! 它的字节码是什么样子的呢？
+先来准备个小工具asmtools分析下
+# cd ~/workspace/jvm/code-tools/ hg clone http://hg.openjdk.java.net/code-tools/asmtools && cd asmtools/build && ant # 编译结果 ~/workspace/jvm/code-tools/asmtools-7.0-build/release/ 字节码反编译为java汇编码(jasm码)
+java -cp ~/workspace/jvm/code-tools/asmtools-7.0-build/release/lib/asmtools.jar org.openjdk.asmtools.jdis.Main Foo.class > Foo."><meta property="og:type" content="article"><meta property="og:url" content="http://concurrent.work/2018/07/20/deep-into-java-1/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2018-07-20T00:00:00+00:00"><meta property="article:modified_time" content="2018-07-20T00:00:00+00:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="深入jvm-1"><meta name=twitter:description content="初探字节码与jvm public class Foo { public static void main(String[] args) { boolean flag = true; if (flag) { System.out.println(&#34;Hello, Java!&#34;); } if (true == flag) { System.out.println(&#34;Hello, JVM!&#34;); } } } 上面这段java代码，执行结果会是什么样的呢？问题会不会太弱鸡了？
+编译
+javac Foo.java # 先编译下它 执行
+java -cp . Foo # 执行下试试咯 Hello, Java! Hello, JVM! 它的字节码是什么样子的呢？
+先来准备个小工具asmtools分析下
+# cd ~/workspace/jvm/code-tools/ hg clone http://hg.openjdk.java.net/code-tools/asmtools && cd asmtools/build && ant # 编译结果 ~/workspace/jvm/code-tools/asmtools-7.0-build/release/ 字节码反编译为java汇编码(jasm码)
+java -cp ~/workspace/jvm/code-tools/asmtools-7.0-build/release/lib/asmtools.jar org.openjdk.asmtools.jdis.Main Foo.class > Foo."><link rel=stylesheet type=text/css media=screen href=/css/normalize.css><link rel=stylesheet type=text/css media=screen href=/css/main.css><link rel=stylesheet type=text/css media=screen href=/css/all.css><link rel=stylesheet href=/css/katex.min.css crossorigin=anonymous><script defer src=/js/katex.min.js integrity=sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz crossorigin=anonymous></script><script defer src=/js/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script><script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}]})})</script><title>深入jvm-1 | Concurrent Work</title></head><body><header><div id=titletext><h2 id=title><a href=http://concurrent.work/>Concurrent Work</a></h2></div><div id=title-description><p id=subtitle>Rambling of a coder who craves for knowledge and understanding of the world.</p><div id=social><nav><ul><li><a href=https://github.com/qudongfang><i title=Github class="icons fab fa-github"></i></a></li><li><a href=https://www.linkedin.com/in/qudongfang/><i title=LinkedIn class="icons fab fa-linkedin"></i></a></li><li><a href=https://twitter.com/qudongfang><i title=Twitter class="icons fab fa-twitter"></i></a></li></ul></nav></div></div><div id=mainmenu><nav><ul><li><a href=/posts>All Posts</a></li><li><a href=/tags>Tags</a></li><li><a href=/about>About</a></li></ul></nav></div></header><main><div class=post><div class=author><p>Written by Dongfang Qu</p></div><div class=post-header><div class=meta><div class=date><span class=day>20</span>
+<span class=rest>Jul 2018</span></div></div><div class=matter><h1 class=title>深入jvm-1</h1></div></div><div class=markdown><h2 id=初探字节码与jvm>初探字节码与jvm</h2><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:#080;font-weight:700>public</span> <span style=color:#080;font-weight:700>class</span> <span style=color:#b06;font-weight:700>Foo</span> <span style=color:#333>{</span>
+    <span style=color:#080;font-weight:700>public</span> <span style=color:#080;font-weight:700>static</span> <span style=color:#339;font-weight:700>void</span> <span style=color:#06b;font-weight:700>main</span><span style=color:#333>(</span>String<span style=color:#333>[]</span> args<span style=color:#333>)</span> <span style=color:#333>{</span>
+        <span style=color:#339;font-weight:700>boolean</span> flag <span style=color:#333>=</span> <span style=color:#080;font-weight:700>true</span><span style=color:#333>;</span>
+
+        <span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span>flag<span style=color:#333>)</span> <span style=color:#333>{</span>
+            System<span style=color:#333>.</span><span style=color:#00c>out</span><span style=color:#333>.</span><span style=color:#00c>println</span><span style=color:#333>(</span><span style=background-color:#fff0f0>&#34;Hello, Java!&#34;</span><span style=color:#333>);</span>
+        <span style=color:#333>}</span>
+
+        <span style=color:#080;font-weight:700>if</span> <span style=color:#333>(</span><span style=color:#080;font-weight:700>true</span> <span style=color:#333>==</span> flag<span style=color:#333>)</span> <span style=color:#333>{</span>
+            System<span style=color:#333>.</span><span style=color:#00c>out</span><span style=color:#333>.</span><span style=color:#00c>println</span><span style=color:#333>(</span><span style=background-color:#fff0f0>&#34;Hello, JVM!&#34;</span><span style=color:#333>);</span>
+        <span style=color:#333>}</span>
+    <span style=color:#333>}</span>
+<span style=color:#333>}</span>
+</code></pre></div><p>上面这段java代码，执行结果会是什么样的呢？问题会不会太弱鸡了？</p><p>编译</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>javac Foo.java <span style=color:#888># 先编译下它</span>
+</code></pre></div><p>执行</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback>java -cp . Foo # 执行下试试咯
+Hello, Java!
+Hello, JVM!
+</code></pre></div><p>它的字节码是什么样子的呢？</p><p>先来准备个小工具<a href=https://wiki.openjdk.java.net/display/CodeTools/asmtools target=_blank>asmtools</a>分析下</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash><span style=color:#888># cd ~/workspace/jvm/code-tools/</span>
+hg clone http://hg.openjdk.java.net/code-tools/asmtools <span style=color:#333>&amp;&amp;</span> <span style=color:#007020>cd</span> asmtools/build <span style=color:#333>&amp;&amp;</span> ant
+<span style=color:#888># 编译结果 ~/workspace/jvm/code-tools/asmtools-7.0-build/release/</span>
+</code></pre></div><p>字节码反编译为java汇编码(jasm码)</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>java -cp ~/workspace/jvm/code-tools/asmtools-7.0-build/release/lib/asmtools.jar org.openjdk.asmtools.jdis.Main Foo.class &gt; Foo.jasm.orig
+rm Foo.class <span style=color:#888># 不再需要了，删掉它</span>
+</code></pre></div><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=color:red;background-color:#faa>#</span> cat Foo<span style=color:#333>.</span><span style=color:#00c>jasm</span><span style=color:#333>.</span><span style=color:#00c>orig</span>
+<span style=color:#080;font-weight:700>super</span> <span style=color:#080;font-weight:700>public</span> <span style=color:#080;font-weight:700>class</span> <span style=color:#b06;font-weight:700>Foo</span>
+        version 52<span style=color:#333>:</span>0
+<span style=color:#333>{</span>
+
+
+<span style=color:#080;font-weight:700>public</span> Method <span style=background-color:#fff0f0>&#34;&lt;init&gt;&#34;</span><span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;()V&#34;</span>
+        stack 1 locals 1
+<span style=color:#333>{</span>
+                aload_0<span style=color:#333>;</span>
+                invokespecial   Method java<span style=color:#333>/</span>lang<span style=color:#333>/</span>Object<span style=color:#333>.</span><span style=background-color:#fff0f0>&#34;&lt;init&gt;&#34;</span><span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;()V&#34;</span><span style=color:#333>;</span>
+                <span style=color:#080;font-weight:700>return</span><span style=color:#333>;</span>
+<span style=color:#333>}</span>
+
+<span style=color:#080;font-weight:700>public</span> <span style=color:#080;font-weight:700>static</span> Method main<span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;([Ljava/lang/String;)V&#34;</span>
+        stack 2 locals 2
+<span style=color:#333>{</span>
+                iconst_1<span style=color:#333>;</span>
+                istore_1<span style=color:#333>;</span>
+                iload_1<span style=color:#333>;</span>
+                ifeq    L14<span style=color:#333>;</span>
+                getstatic       Field java<span style=color:#333>/</span>lang<span style=color:#333>/</span>System<span style=color:#333>.</span><span style=color:#00c>out</span><span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;Ljava/io/PrintStream;&#34;</span><span style=color:#333>;</span>
+                ldc     String <span style=background-color:#fff0f0>&#34;Hello, Java!&#34;</span><span style=color:#333>;</span>
+                invokevirtual   Method java<span style=color:#333>/</span>io<span style=color:#333>/</span>PrintStream<span style=color:#333>.</span><span style=color:#00c>println</span><span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;(Ljava/lang/String;)V&#34;</span><span style=color:#333>;</span>
+        L14<span style=color:#333>:</span>    stack_frame_type append<span style=color:#333>;</span> 
+                locals_map <span style=color:#339;font-weight:700>int</span><span style=color:#333>;</span>
+                iconst_1<span style=color:#333>;</span>
+                iload_1<span style=color:#333>;</span>
+                if_icmpne       L27<span style=color:#333>;</span>
+                getstatic       Field java<span style=color:#333>/</span>lang<span style=color:#333>/</span>System<span style=color:#333>.</span><span style=color:#00c>out</span><span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;Ljava/io/PrintStream;&#34;</span><span style=color:#333>;</span>
+                ldc     String <span style=background-color:#fff0f0>&#34;Hello, JVM!&#34;</span><span style=color:#333>;</span>
+                invokevirtual   Method java<span style=color:#333>/</span>io<span style=color:#333>/</span>PrintStream<span style=color:#333>.</span><span style=color:#00c>println</span><span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;(Ljava/lang/String;)V&#34;</span><span style=color:#333>;</span>
+        L27<span style=color:#333>:</span>    stack_frame_type same<span style=color:#333>;</span>
+                <span style=color:#080;font-weight:700>return</span><span style=color:#333>;</span>
+<span style=color:#333>}</span>
+
+<span style=color:#333>}</span> <span style=color:#888>// end Class Foo
+</span></code></pre></div><p>修改下字节码反编译的结果java汇编码(jasm码)</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-bash data-lang=bash>awk <span style=background-color:#fff0f0>&#39;NR==1, /iconst_1/{sub(/iconst_1/, &#34;iconst_2&#34;)} 1&#39;</span> Foo.jasm.orig &gt; Foo.jasm <span style=color:#888># 把第一个iconst_1改为iconst_2</span>
+
+<span style=color:#888># 文件编辑器也可以修改哈</span>
+</code></pre></div><p>把修改后的java汇编码(jasm码)编译成字节码</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback>java -cp ~/workspace/jvm/code-tools/asmtools-7.0-build/release/lib/asmtools.jar org.openjdk.asmtools.jasm.Main Foo.jasm
+</code></pre></div><p>执行从jasm编译出来的Foo.class试试看哦</p><p>此处暂停一下，想想看Foo.class能执行么？执行会输出什么呢？为什么呢？</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback>java -cp . Foo
+# Hello, Java!
+</code></pre></div><p>为什么没输出"Hello, JVM!&ldquo;呢？</p><ol><li>java/jvm把Boolean当作int来处理，flag变量被初始化为true，也就是1</li><li>awk命令把flag初始值<code>iconst_1</code>改成了<code>iconst_2</code></li><li><code>if(flag) </code>判断使用0值判断指令<code>ifeq</code>，flag等于常数2为非0，所以输出了"Hello, Java!&rdquo;</li><li><code>if(true == flag)</code>判断使用整数相等判断指令<code>if_icmpne</code>，flag = 2 != <code>iconst_1</code>(true)，所以没有输出"Hello, JVM!"</li></ol><p>修改后的jasm码</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java>
+<span style=color:#080;font-weight:700>super</span> <span style=color:#080;font-weight:700>public</span> <span style=color:#080;font-weight:700>class</span> <span style=color:#b06;font-weight:700>Foo</span>
+	version 52<span style=color:#333>:</span>0
+<span style=color:#333>{</span>
+
+
+<span style=color:#080;font-weight:700>public</span> Method <span style=background-color:#fff0f0>&#34;&lt;init&gt;&#34;</span><span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;()V&#34;</span>
+	stack 1 locals 1
+<span style=color:#333>{</span>
+		aload_0<span style=color:#333>;</span>
+		invokespecial	Method java<span style=color:#333>/</span>lang<span style=color:#333>/</span>Object<span style=color:#333>.</span><span style=background-color:#fff0f0>&#34;&lt;init&gt;&#34;</span><span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;()V&#34;</span><span style=color:#333>;</span>
+		<span style=color:#080;font-weight:700>return</span><span style=color:#333>;</span>
+<span style=color:#333>}</span>
+
+<span style=color:#080;font-weight:700>public</span> <span style=color:#080;font-weight:700>static</span> Method main<span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;([Ljava/lang/String;)V&#34;</span>
+	stack 2 locals 2
+<span style=color:#333>{</span>
+		iconst_2<span style=color:#333>;</span>  <span style=color:red;background-color:#faa>#</span> 把常数2推至栈顶
+		istore_1<span style=color:#333>;</span> <span style=color:red;background-color:#faa>#</span> 将栈顶int型整数存入第二个本地变量<span style=color:red;background-color:#faa>；</span> 也就是2
+		iload_1<span style=color:#333>;</span> <span style=color:red;background-color:#faa>#</span> 将第2个int型本地变量推送至栈顶<span style=color:red;background-color:#faa>；</span>也就是2
+		ifeq	L14<span style=color:#333>;</span> <span style=color:red;background-color:#faa>#</span> 当栈顶int型数值等于0时跳转至L14<span style=color:red;background-color:#faa>；</span>2 当然不会等于0了<span style=color:red;background-color:#faa>，</span>所以不跳转
+		getstatic	Field java<span style=color:#333>/</span>lang<span style=color:#333>/</span>System<span style=color:#333>.</span><span style=color:#00c>out</span><span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;Ljava/io/PrintStream;&#34;</span><span style=color:#333>;</span>
+		ldc	String <span style=background-color:#fff0f0>&#34;Hello, Java!&#34;</span><span style=color:#333>;</span>
+		invokevirtual	Method java<span style=color:#333>/</span>io<span style=color:#333>/</span>PrintStream<span style=color:#333>.</span><span style=color:#00c>println</span><span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;(Ljava/lang/String;)V&#34;</span><span style=color:#333>;</span>
+	L14<span style=color:#333>:</span>	stack_frame_type append<span style=color:#333>;</span>
+		locals_map <span style=color:#339;font-weight:700>int</span><span style=color:#333>;</span>
+		iconst_1<span style=color:#333>;</span>  <span style=color:red;background-color:#faa>#</span> 把常数1推至栈顶
+		iload_1<span style=color:#333>;</span> <span style=color:red;background-color:#faa>#</span> 将第2个int型本地变量推送至栈顶<span style=color:red;background-color:#faa>；</span>也就是把2推送至栈顶
+		if_icmpne	L27<span style=color:#333>;</span>  比较栈顶两个int型数值的大小<span style=color:red;background-color:#faa>，</span>当结果不等时跳转至L27<span style=color:red;background-color:#faa>；</span> 2 <span style=color:#333>!=</span> 1 所以跳到了L27
+		getstatic	Field java<span style=color:#333>/</span>lang<span style=color:#333>/</span>System<span style=color:#333>.</span><span style=color:#00c>out</span><span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;Ljava/io/PrintStream;&#34;</span><span style=color:#333>;</span>
+		ldc	String <span style=background-color:#fff0f0>&#34;Hello, JVM!&#34;</span><span style=color:#333>;</span>
+		invokevirtual	Method java<span style=color:#333>/</span>io<span style=color:#333>/</span>PrintStream<span style=color:#333>.</span><span style=color:#00c>println</span><span style=color:#333>:</span><span style=background-color:#fff0f0>&#34;(Ljava/lang/String;)V&#34;</span><span style=color:#333>;</span>
+	L27<span style=color:#333>:</span>	stack_frame_type same<span style=color:#333>;</span>
+		<span style=color:#080;font-weight:700>return</span><span style=color:#333>;</span>
+<span style=color:#333>}</span>
+
+<span style=color:#333>}</span> <span style=color:#888>// end Class Foo
+</span><span style=color:#888></span>
+</code></pre></div><h1 id=ref>Ref</h1><ol><li><a href=https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.3.4>https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.3.4</a></li><li><a href=https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.11>https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.11</a></li><li><a href=https://wiki.openjdk.java.net/display/CodeTools/asmtools>https://wiki.openjdk.java.net/display/CodeTools/asmtools</a></li><li><a href=https://wiki.openjdk.java.net/display/CodeTools/Appendix+A>https://wiki.openjdk.java.net/display/CodeTools/Appendix+A</a></li></ol></div><div class=tags><div class=taxosfloating_left><p>Categories</p></div><div class=termsfloating_right><p><a href=/categories/bytecode/>bytecode</a>
+<a href=/categories/java/>java</a>
+<a href=/categories/jvm/>jvm</a></p></div><div class=clearit></div><div class=tags><div class=taxosfloating_left><p>Tags</p></div><div class=termsfloating_right><p><a href=/tags/bytecode/>bytecode</a>
+<a href=/tags/java/>java</a>
+<a href=/tags/jvm/>jvm</a></p></div><div class=clearit></div></div></div></main><footer>©Copyright | <a href=https://github.com/qudongfang/>Concurrent work</a></footer></body></html>

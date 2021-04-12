@@ -1,0 +1,157 @@
+<!doctype html><html lang=en><head><meta name=generator content="Hugo 0.82.0"><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=x-ua-compatible content="IE=edge"><meta property="og:title" content="一个由thrift 默认参数引发的血案"><meta name=author content="Dongfang Qu"><meta name=keywords content="java,thrift,case"><meta name=description content="公司引入 thrift 做后端 server 之间的 rpc 框架，一个rpc sever 模块在阿里云部署的两台机器稳定运行两天后在流量低峰期诡异的退出了。
+thrift server 类型与 阿里云 ECS 配置  TThreadedSelectorServer CPU2核、 …"><meta property="og:title" content="一个由thrift 默认参数引发的血案"><meta property="og:description" content="公司引入 thrift 做后端 server 之间的 rpc 框架，一个rpc sever 模块在阿里云部署的两台机器稳定运行两天后在流量低峰期诡异的退出了。
+thrift server 类型与 阿里云 ECS 配置  TThreadedSelectorServer CPU2核、内存2GB  server 退出前的异常log信息： [2015-06-20 10:45:56,713 WARN] Got an IOException in internalRead! java.io.IOException: Connection reset by peer at sun.nio.ch.FileDispatcherImpl.read0(Native Method) at sun.nio.ch.SocketDispatcher.read(SocketDispatcher.java:39) at sun.nio.ch.IOUtil.readIntoNativeBuffer(IOUtil.java:223) at sun.nio.ch.IOUtil.read(IOUtil.java:197) at sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:380) at org.apache.thrift.transport.TNonblockingSocket.read(TNonblockingSocket.java:142) at org.apache.thrift.server.AbstractNonblockingServer$FrameBuffer.internalRead(AbstractNonblockingServer.java:539) at org.apache.thrift.server.AbstractNonblockingServer$FrameBuffer.read(AbstractNonblockingServer.java:338) at org.apache.thrift.server.AbstractNonblockingServer$AbstractSelectThread.handleRead(AbstractNonblockingServer.java:203) at org.apache.thrift.server.TThreadedSelectorServer$SelectorThread.select(TThreadedSelectorServer.java:590) at org.apache.thrift.server.TThreadedSelectorServer$SelectorThread.run(TThreadedSelectorServer.java:545) [2015-06-20 10:46:08,110 ERROR] run() exiting due to uncaught error java.lang.OutOfMemoryError: Java heap space at java."><meta property="og:type" content="article"><meta property="og:url" content="http://concurrent.work/2015/06/28/one-java-thrift-case-caused-by-default-parameters/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2015-06-28T00:00:00+00:00"><meta property="article:modified_time" content="2015-06-28T00:00:00+00:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="一个由thrift 默认参数引发的血案"><meta name=twitter:description content="公司引入 thrift 做后端 server 之间的 rpc 框架，一个rpc sever 模块在阿里云部署的两台机器稳定运行两天后在流量低峰期诡异的退出了。
+thrift server 类型与 阿里云 ECS 配置  TThreadedSelectorServer CPU2核、内存2GB  server 退出前的异常log信息： [2015-06-20 10:45:56,713 WARN] Got an IOException in internalRead! java.io.IOException: Connection reset by peer at sun.nio.ch.FileDispatcherImpl.read0(Native Method) at sun.nio.ch.SocketDispatcher.read(SocketDispatcher.java:39) at sun.nio.ch.IOUtil.readIntoNativeBuffer(IOUtil.java:223) at sun.nio.ch.IOUtil.read(IOUtil.java:197) at sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:380) at org.apache.thrift.transport.TNonblockingSocket.read(TNonblockingSocket.java:142) at org.apache.thrift.server.AbstractNonblockingServer$FrameBuffer.internalRead(AbstractNonblockingServer.java:539) at org.apache.thrift.server.AbstractNonblockingServer$FrameBuffer.read(AbstractNonblockingServer.java:338) at org.apache.thrift.server.AbstractNonblockingServer$AbstractSelectThread.handleRead(AbstractNonblockingServer.java:203) at org.apache.thrift.server.TThreadedSelectorServer$SelectorThread.select(TThreadedSelectorServer.java:590) at org.apache.thrift.server.TThreadedSelectorServer$SelectorThread.run(TThreadedSelectorServer.java:545) [2015-06-20 10:46:08,110 ERROR] run() exiting due to uncaught error java.lang.OutOfMemoryError: Java heap space at java."><link rel=stylesheet type=text/css media=screen href=/css/normalize.css><link rel=stylesheet type=text/css media=screen href=/css/main.css><link rel=stylesheet type=text/css media=screen href=/css/all.css><link rel=stylesheet href=/css/katex.min.css crossorigin=anonymous><script defer src=/js/katex.min.js integrity=sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz crossorigin=anonymous></script><script defer src=/js/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script><script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}]})})</script><title>一个由thrift 默认参数引发的血案 | Concurrent Work</title></head><body><header><div id=titletext><h2 id=title><a href=http://concurrent.work/>Concurrent Work</a></h2></div><div id=title-description><p id=subtitle>Rambling of a coder who craves for knowledge and understanding of the world.</p><div id=social><nav><ul><li><a href=https://github.com/qudongfang><i title=Github class="icons fab fa-github"></i></a></li><li><a href=https://www.linkedin.com/in/qudongfang/><i title=LinkedIn class="icons fab fa-linkedin"></i></a></li><li><a href=https://twitter.com/qudongfang><i title=Twitter class="icons fab fa-twitter"></i></a></li></ul></nav></div></div><div id=mainmenu><nav><ul><li><a href=/posts>All Posts</a></li><li><a href=/tags>Tags</a></li><li><a href=/about>About</a></li></ul></nav></div></header><main><div class=post><div class=author><p>Written by Dongfang Qu</p></div><div class=post-header><div class=meta><div class=date><span class=day>28</span>
+<span class=rest>Jun 2015</span></div></div><div class=matter><h1 class=title>一个由thrift 默认参数引发的血案</h1></div></div><div class=markdown><p>公司引入 thrift 做后端 server 之间的 rpc 框架，一个rpc sever 模块在阿里云部署的两台机器稳定运行两天后在流量低峰期诡异的退出了。</p><h3 id=thrift-server-类型与-阿里云-ecs-配置>thrift server 类型与 阿里云 ECS 配置</h3><ol><li>TThreadedSelectorServer</li><li>CPU2核、内存2GB</li></ol><h3 id=server-退出前的异常log信息>server 退出前的异常log信息：</h3><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback>[2015-06-20 10:45:56,713 WARN] Got an IOException in internalRead!
+java.io.IOException: Connection reset by peer
+        at sun.nio.ch.FileDispatcherImpl.read0(Native Method)
+        at sun.nio.ch.SocketDispatcher.read(SocketDispatcher.java:39)
+        at sun.nio.ch.IOUtil.readIntoNativeBuffer(IOUtil.java:223)
+        at sun.nio.ch.IOUtil.read(IOUtil.java:197)
+        at sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:380)
+        at org.apache.thrift.transport.TNonblockingSocket.read(TNonblockingSocket.java:142)
+        at org.apache.thrift.server.AbstractNonblockingServer$FrameBuffer.internalRead(AbstractNonblockingServer.java:539)
+        at org.apache.thrift.server.AbstractNonblockingServer$FrameBuffer.read(AbstractNonblockingServer.java:338)
+        at org.apache.thrift.server.AbstractNonblockingServer$AbstractSelectThread.handleRead(AbstractNonblockingServer.java:203)
+        at org.apache.thrift.server.TThreadedSelectorServer$SelectorThread.select(TThreadedSelectorServer.java:590)
+        at org.apache.thrift.server.TThreadedSelectorServer$SelectorThread.run(TThreadedSelectorServer.java:545)
+[2015-06-20 10:46:08,110 ERROR] run() exiting due to uncaught error
+java.lang.OutOfMemoryError: Java heap space
+        at java.nio.HeapByteBuffer.&lt;init&gt;(HeapByteBuffer.java:57)
+        at java.nio.ByteBuffer.allocate(ByteBuffer.java:335)
+        at org.apache.thrift.server.AbstractNonblockingServer$FrameBuffer.read(AbstractNonblockingServer.java:371)
+        at org.apache.thrift.server.AbstractNonblockingServer$AbstractSelectThread.handleRead(AbstractNonblockingServer.java:203)
+        at org.apache.thrift.server.TThreadedSelectorServer$SelectorThread.select(TThreadedSelectorServer.java:590)
+        at org.apache.thrift.server.TThreadedSelectorServer$SelectorThread.run(TThreadedSelectorServer.java:545)
+
+</code></pre></div><h3 id=一个thrift-rpc-请求接收过程如下>一个thrift rpc 请求接收过程如下：</h3><p>参考中文注释</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback>    /**
+     * Give this FrameBuffer a chance to read. The selector loop should have
+     * received a read event for this FrameBuffer.
+     * 
+     * @return true if the connection should live on, false if it should be
+     *         closed
+     */
+    public boolean read() {
+      if (state_ == FrameBufferState.READING_FRAME_SIZE) {
+        // try to read the frame size completely 
+		// 读取 frame 头，即frame 的size，根据 thrift 协议定义，应该是请求体前4个字节
+        if (!internalRead()) { 
+          return false;
+        }
+
+        // if the frame size has been read completely, then prepare to read the
+        // actual frame.
+        if (buffer_.remaining() == 0) {
+          // pull out the frame size as an integer.
+          int frameSize = buffer_.getInt(0);
+          if (frameSize &lt;= 0) {
+            LOGGER.error(&#34;Read an invalid frame size of &#34; + frameSize
+                + &#34;. Are you using TFramedTransport on the client side?&#34;);
+            return false;
+          }
+
+          // if this frame will always be too large for this server, log the
+          // error and close the connection.
+		  // frame 长度异常判断
+          if (frameSize &gt; MAX_READ_BUFFER_BYTES) {   
+            LOGGER.error(&#34;Read a frame size of &#34; + frameSize
+                + &#34;, which is bigger than the maximum allowable buffer size for ALL connections.&#34;);
+            return false;
+          }
+
+          // if this frame will push us over the memory limit, then return.
+          // with luck, more memory will free up the next time around.
+		   // frame 长度异常判断
+          if (readBufferBytesAllocated.get() + frameSize &gt; MAX_READ_BUFFER_BYTES) {
+            return true; 
+          }
+
+          // increment the amount of memory allocated to read buffers
+          readBufferBytesAllocated.addAndGet(frameSize + 4); 
+
+          // reallocate the readbuffer as a frame-sized buffer
+		  // 为 frame 分配足够大内存空间， 从 log 打印信息来看 server 就是在这个调用点 oom 了
+          buffer_ = ByteBuffer.allocate(frameSize + 4);  
+          buffer_.putInt(frameSize);
+
+          state_ = FrameBufferState.READING_FRAME;
+        } else {
+          // this skips the check of READING_FRAME state below, since we can&#39;t
+          // possibly go on to that state if there&#39;s data left to be read at
+          // this one.
+          return true;
+        }
+      }
+
+      // it is possible to fall through from the READING_FRAME_SIZE section
+      // to READING_FRAME if there&#39;s already some frame data available once
+      // READING_FRAME_SIZE is complete.
+
+      if (state_ == FrameBufferState.READING_FRAME) {
+		// 读取 frame 体
+        if (!internalRead()) {
+          return false; 
+        }
+
+        // since we&#39;re already in the select loop here for sure, we can just
+        // modify our selection key directly.
+        if (buffer_.remaining() == 0) {
+          // get rid of the read select interests
+          selectionKey_.interestOps(0);
+          state_ = FrameBufferState.READ_FRAME_COMPLETE;
+        }
+
+        return true;
+      }
+
+      // if we fall through to this point, then the state must be invalid.
+      LOGGER.error(&#34;Read was called but state is invalid (&#34; + state_ + &#34;)&#34;);
+      return false;
+    } 
+	
+    /**
+     * Perform a read into buffer.
+     * 
+     * @return true if the read succeeded, false if there was an error or the
+     *         connection closed.
+     */
+	 // 读 SocketChannel
+    private boolean internalRead() {
+      try {
+        if (trans_.read(buffer_) &lt; 0) {
+          return false;
+        }
+        return true;
+      } catch (IOException e) {
+        LOGGER.warn(&#34;Got an IOException in internalRead!&#34;, e);
+        return false;
+      }
+    }
+</code></pre></div><p>代码分析到这里问题就可以定位到是 frame size（MAX_READ_BUFFER_BYTES） 过大导致的异常退出。</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-fallback data-lang=fallback>  public static abstract class AbstractNonblockingServerArgs&lt;T extends AbstractNonblockingServerArgs&lt;T&gt;&gt; extends AbstractServerArgs&lt;T&gt; {
+	  // 默认是 Long.MAX_VALUE，肯定 OOM
+    public long maxReadBufferBytes = Long.MAX_VALUE;
+
+    public AbstractNonblockingServerArgs(TNonblockingServerTransport transport) {
+      super(transport);
+      transportFactory(new TFramedTransport.Factory());
+    }
+  }
+  
+ /**
+   * The maximum amount of memory we will allocate to client IO buffers at a
+   * time. Without this limit, the server will gladly allocate client buffers
+   * right into an out of memory exception, rather than waiting.
+   */
+   // 该注释指出了问题所在
+  final long MAX_READ_BUFFER_BYTES;
+
+  // 可以通过构造函数设置MAX_READ_BUFFER_BYTES
+  public AbstractNonblockingServer(AbstractNonblockingServerArgs args) {
+    super(args);
+    MAX_READ_BUFFER_BYTES = args.maxReadBufferBytes;
+  }
+</code></pre></div><h3 id=问题复现验证>问题复现(验证)</h3><ol><li>echo &ldquo;something&rdquo; | nc 到 thrift 端口</li><li>telnet 到 thrift 端口，随意敲几个字符</li></ol><p>thrift server log中打印几行错误信息后即退出。</p><h3 id=aliyun-服务器触发原因>aliyun 服务器触发原因</h3><ul><li>阿里机房内网正常的端口扫描（猜测）</li><li>阿里机房内网其他用户的ECS 发起的内网攻击（猜测）</li></ul><p>异常的客户端连接到 thrift server 端口，随机的发送数据导致 thrift协议解析到异常大的 frameSize。</p><h3 id=解决办法>解决办法</h3><ol><li>使用 TFramedTransport，设置初始化函数中maxLength，默认值DEFAULT_MAX_LENGTH = 16384000;</li><li>其他请务必设置AbstractNonblockingServerArgs.maxReadBufferBytes，默认值Long.MAX_VALUE;</li></ol><h3 id=参考代码>参考代码</h3><ul><li><p><a href=https://github.com/apache/thrift/blob/1568aef7d499153469131449ec682998598f0d3c/lib/java/src/org/apache/thrift/server/AbstractNonblockingServer.java#L335 target=_blank>AbstractNonblockingServer::read</a></p></li><li><p><a href=https://github.com/apache/thrift/blob/1568aef7d499153469131449ec682998598f0d3c/lib/java/src/org/apache/thrift/server/AbstractNonblockingServer.java#L537 target=_blank>AbstractNonblockingServer::internalRead</a></p></li><li><p><a href=https://github.com/apache/thrift/blob/1568aef7d499153469131449ec682998598f0d3c/lib/java/src/org/apache/thrift/transport/TFramedTransport.java#L77 target=_blank>TFramedTransport</a></p></li></ul></div><div class=tags><div class=taxosfloating_left><p>Categories</p></div><div class=termsfloating_right><p><a href=/categories/case/>case</a>
+<a href=/categories/java/>java</a>
+<a href=/categories/thrift/>thrift</a></p></div><div class=clearit></div><div class=tags><div class=taxosfloating_left><p>Tags</p></div><div class=termsfloating_right><p><a href=/tags/case/>case</a>
+<a href=/tags/java/>java</a>
+<a href=/tags/thrift/>thrift</a></p></div><div class=clearit></div></div></div></main><footer>©Copyright | <a href=https://github.com/qudongfang/>Concurrent work</a></footer></body></html>
